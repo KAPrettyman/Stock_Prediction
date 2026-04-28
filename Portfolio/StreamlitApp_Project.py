@@ -68,8 +68,8 @@ sm_session = sagemaker.Session(boto_session=session)
 
 MODEL_INFO = {
     "endpoint"  : aws_endpoint,
-    "explainer" : "explainer_fraud.shap",
-    "pipeline"  : "fine_tuned_pipeline.tar.gz",
+    "explainer" : "explainer_ridge.shap",
+    "pipeline"  : "best_fraud_model_ridge.tar.gz",
     "keys"      : ['TransactionAmt','addr1','addr2'],
     "inputs"    : [{"name": k, "type": "number", "min": -1.0, "max": 1.0, "default": 0.0, "step": 0.01} for k in ['TransactionAmt','addr1','addr2']]
 }
@@ -130,18 +130,18 @@ def display_explanation(input_df, session, aws_bucket):
     explainer = load_shap_explainer(session, aws_bucket, posixpath.join('explainer', explainer_name),os.path.join(tempfile.gettempdir(), explainer_name))
     
     best_pipeline = load_pipeline(session, aws_bucket, 'sklearn-pipeline-deployment')
-    preprocessing_pipeline = Pipeline(steps=best_pipeline.steps[:-3])
+    preprocessing_pipeline = Pipeline(steps=best_pipeline.steps[:-1])
     input_df=pd.DataFrame(input_df)
     input_df_transformed = preprocessing_pipeline.transform(input_df)
-    feature_names = best_pipeline[:-2].get_feature_names_out()
+    feature_names = best_pipeline[:-1].get_feature_names_out()
     input_df_transformed = pd.DataFrame(input_df_transformed, columns=feature_names)
     shap_values = explainer(input_df_transformed)
     
     st.subheader("🔍 Decision Transparency (SHAP)")
     fig, ax = plt.subplots(figsize=(10, 4))
-    shap.plots.waterfall(shap_values[0, :, 1])  # class 1 = fraud
+    shap.plots.waterfall(shap_values[0])  # class 1 = fraud
     st.pyplot(fig)
-    top_feature = pd.Series(shap_values[0, :, 1].values, index=shap_values[0, :, 1].feature_names).abs().idxmax()
+    top_feature = pd.Series(shap_values[0].values, index=shap_values[0].feature_names).abs().idxmax()
     st.info(f"**Business Insight:** The most influential factor in this decision was **{top_feature}**.")
 
 

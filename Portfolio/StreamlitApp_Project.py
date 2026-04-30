@@ -68,10 +68,10 @@ sm_session = sagemaker.Session(boto_session=session)
 
 MODEL_INFO = {
     "endpoint"  : aws_endpoint,
-    "explainer" : "explainer_ridge.shap",
+    "explainer" : "explainer_ridge_1.shap",
     "pipeline"  : "best_fraud_model_ridge.tar.gz",
-    "keys"      : ['TransactionAmt','addr1','addr2'],
-    "inputs"    : [{"name": k, "type": "number", "min": -1.0, "max": 1.0, "default": 0.0, "step": 0.01} for k in ['TransactionAmt','addr1','addr2']]
+    "keys"      : ['TransactionAmt', 'TransactionDT', 'card1', 'addr1', 'addr2'],
+    "inputs"    : [{"name": k, "type": "number", "min": -1.0, "max": 1.0, "default": 0.0, "step": 0.01} for k in ['TransactionAmt', 'TransactionDT', 'card1', 'addr1', 'addr2']]
 }
 
 
@@ -133,7 +133,7 @@ def display_explanation(input_df, session, aws_bucket):
     preprocessing_pipeline = Pipeline(steps=best_pipeline.steps[:-1])
     input_df=pd.DataFrame(input_df)
     input_df_transformed = preprocessing_pipeline.transform(input_df)
-    feature_names = best_pipeline[:-1].get_feature_names_out()
+    feature_names = [f"feature_{i}" for i in range(input_df_transformed.shape[1])]
     input_df_transformed = pd.DataFrame(input_df_transformed, columns=feature_names)
     shap_values = explainer(input_df_transformed)
     
